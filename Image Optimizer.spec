@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
 from pathlib import Path
+import re
 
 from PyInstaller.utils.hooks import collect_data_files
 
 datas = [('config.json', '.')]
 datas += collect_data_files('certifi')
 datas += collect_data_files('tkinterdnd2')
+
+# Versioning: `VERSION` is single source of truth (MAJOR.MINOR.PATCH).
+_version_path = Path(__file__).with_name("VERSION")
+_VERSION = _version_path.read_text(encoding="utf-8").strip()
+if not re.match(r"^\d+\.\d+\.\d+$", _VERSION):
+    raise ValueError(
+        f"Ogiltigt versionsformat i {_version_path}: {_VERSION!r}. Förväntat: MAJOR.MINOR.PATCH"
+    )
 
 # --- Tcl/Tk: måste följa med appen på macOS 26+ (systemets Tk 8.5 kraschar i TkpInit).
 # python.org-installerade Python har Tcl.framework + Tk.framework under sys.base_prefix.
@@ -94,6 +103,8 @@ app = BUNDLE(
         'NSHighResolutionCapable': True,
         'CFBundleDisplayName': 'Image Optimizer',
         'CFBundleName': 'Image Optimizer',
+        'CFBundleShortVersionString': _VERSION,
+        'CFBundleVersion': _VERSION,
         'CFBundleDocumentTypes': [
             {
                 'CFBundleTypeName': 'JPEG Image',

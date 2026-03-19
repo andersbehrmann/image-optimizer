@@ -1,0 +1,6 @@
+Pillow>=10.0.0
+tinify>=1.6.0
+# 0.4.x innehåller osx-arm64 (Apple Silicon); äldre versioner saknar den mappen.
+tkinterdnd2>=0.4.3
+py2app>=0.28.0
+pyinstaller>=6.0
