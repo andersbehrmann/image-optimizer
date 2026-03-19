@@ -12,7 +12,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from PIL import Image
+from PIL import Image, ImageTk
 import tinify
 
 
@@ -88,69 +88,141 @@ class ImageOptimizerApp:
             return False
 
     def create_widgets(self):
-        """Skapa alla GUI-komponenter"""
-        # Header
-        header_frame = ttk.Frame(self.root, padding="10")
-        header_frame.pack(fill=tk.X)
+        """Skapa alla GUI-komponenter (v2-layout enligt illustration)."""
+        # Bas-layout / storlek
+        self.root.geometry("1050x640")
 
-        title_label = ttk.Label(
-            header_frame,
-            text="Image Optimizer",
-            font=("Helvetica", 18, "bold")
-        )
-        title_label.pack()
+        outer = ttk.Frame(self.root, padding="18")
+        outer.pack(fill=tk.BOTH, expand=True)
 
-        subtitle_label = ttk.Label(
-            header_frame,
-            text="Skala ner, konvertera till WebP och komprimera dina bilder",
-            font=("Helvetica", 10)
-        )
-        subtitle_label.pack()
+        # Översta illustration
+        illustration_frame = ttk.Frame(outer)
+        illustration_frame.pack(fill=tk.X, pady=(0, 14))
 
-        # Huvudlayout: Två kolumner
-        main_container = ttk.Frame(self.root, padding="10")
-        main_container.pack(fill=tk.BOTH, expand=True)
+        illustration_loaded = False
+        try:
+            ill_path = self._bundle_dir() / "illustration.png"
+            if ill_path.exists():
+                img = Image.open(ill_path)
+                # Skala proportionellt (max bredd enligt design).
+                max_w = 760
+                if img.width > max_w:
+                    new_h = int(img.height * (max_w / img.width))
+                    img = img.resize((max_w, new_h), Image.LANCZOS)
+                self._illustration_imgtk = ImageTk.PhotoImage(img)
 
-        # VÄNSTER KOLUMN: Fillista
-        left_column = ttk.Frame(main_container)
-        left_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+                ill_label = ttk.Label(illustration_frame, image=self._illustration_imgtk)
+                ill_label.pack()
+                illustration_loaded = True
+        except Exception as e:
+            print(f"Kunde inte ladda illustration.png: {e}")
 
-        # Knappar ovanför fillistan
-        btn_frame = ttk.Frame(left_column)
-        btn_frame.pack(fill=tk.X, pady=(0, 5))
+        if not illustration_loaded:
+            ttk.Label(illustration_frame, text="Image Optimizer", font=("Helvetica", 18, "bold")).pack()
 
-        select_btn = ttk.Button(btn_frame, text="Välj bilder", command=self.select_files)
-        select_btn.pack(side=tk.LEFT, padx=(0, 5))
+        # Två kolumner + bottenknapp
+        columns_frame = ttk.Frame(outer)
+        columns_frame.pack(fill=tk.BOTH, expand=True)
+        columns_frame.columnconfigure(0, weight=1)
+        columns_frame.columnconfigure(1, weight=1)
+        columns_frame.rowconfigure(0, weight=1)
 
-        clear_btn = ttk.Button(btn_frame, text="Rensa lista", command=self.clear_files)
-        clear_btn.pack(side=tk.LEFT)
-
-        # Stor yta för lista + drag-n-drop (tk.Frame behövs för tkinterdnd2)
-        self.drop_zone = tk.Frame(
-            left_column,
-            bg='#e8e8e8',
+        left_card = tk.Frame(
+            columns_frame,
+            bg="white",
             highlightthickness=1,
-            highlightbackground='#999999',
+            highlightbackground="#E5E7EB",
         )
-        self.drop_zone.pack(fill=tk.BOTH, expand=True)
+        left_card.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
 
-        self.drop_hint = tk.Label(
-            self.drop_zone,
-            text=(
-                "Släpp JPG/PNG här eller välj med \"Välj bilder\". "
-                "Du kan också släppa filer på app-ikonen. "
-                "Klicka på den gröna knappen när du vill optimera."
-            ),
-            bg='#e8e8e8',
-            fg='#444444',
-            font=('Helvetica', 10),
-            wraplength=340,
-            justify=tk.LEFT,
+        right_card = tk.Frame(
+            columns_frame,
+            bg="white",
+            highlightthickness=1,
+            highlightbackground="#E5E7EB",
         )
-        self.drop_hint.pack(fill=tk.X, padx=8, pady=(8, 4))
+        right_card.grid(row=0, column=1, sticky="nsew", padx=(12, 0))
 
-        list_row = tk.Frame(self.drop_zone, bg='#e8e8e8')
-        list_row.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 8))
+        # --- Left card ---
+        left_card_inner = ttk.Frame(left_card, padding="16")
+        left_card_inner.pack(fill=tk.BOTH, expand=True)
+
+        btn_row = ttk.Frame(left_card_inner)
+        btn_row.pack(fill=tk.X, pady=(0, 12))
+
+        select_btn = tk.Button(
+            btn_row,
+            text="+  Välj bilder",
+            bg="#22c55e",
+            fg="white",
+            activebackground="#16a34a",
+            relief="flat",
+            padx=14,
+            pady=8,
+            font=("Helvetica", 11, "bold"),
+            command=self.select_files,
+        )
+        select_btn.pack(side=tk.LEFT)
+
+        clear_btn = tk.Button(
+            btn_row,
+            text="Rensa lista",
+            bg="#F3F4F6",
+            fg="#6B7280",
+            activebackground="#E5E7EB",
+            relief="flat",
+            padx=14,
+            pady=8,
+            font=("Helvetica", 11, "bold"),
+            command=self.clear_files,
+        )
+        clear_btn.pack(side=tk.LEFT, padx=(10, 0))
+
+        # Drag-n-drop dashed area
+        self.drop_frame = tk.Frame(left_card_inner, bg="#F9FAFB", highlightthickness=1, highlightbackground="#D1D5DB")
+        self.drop_frame.pack(fill=tk.X, pady=(0, 12))
+
+        # Canvas gör det enkelt att få dashed outline
+        self.drop_canvas = tk.Canvas(self.drop_frame, height=150, bg="#F9FAFB", highlightthickness=0)
+        self.drop_canvas.pack(fill=tk.X, expand=True)
+
+        self._drop_rect_id = None
+        self._drop_text_id = None
+
+        def _redraw_drop_border(_=None):
+            self.drop_canvas.delete("drop_border")
+            w = max(self.drop_canvas.winfo_width(), 1)
+            h = max(self.drop_canvas.winfo_height(), 1)
+            pad = 12
+            self.drop_canvas.create_rectangle(
+                pad,
+                pad,
+                w - pad,
+                h - pad,
+                dash=(6, 6),
+                outline="#9CA3AF",
+                width=2,
+                tags=("drop_border",),
+            )
+            self.drop_canvas.create_text(
+                w / 2,
+                h / 2,
+                text="Drag in images\nto convert to WebP",
+                fill="#6B7280",
+                font=("Helvetica", 11, "bold"),
+                justify="center",
+                tags=("drop_text",),
+            )
+
+        self.drop_canvas.bind("<Configure>", _redraw_drop_border)
+        _redraw_drop_border()
+
+        # List-container (ska döljas när tomt)
+        self.list_container = tk.Frame(left_card_inner, bg="white")
+        self.list_container.pack_forget()
+
+        list_row = tk.Frame(self.list_container, bg="white")
+        list_row.pack(fill=tk.BOTH, expand=True)
 
         scrollbar = ttk.Scrollbar(list_row)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -158,8 +230,9 @@ class ImageOptimizerApp:
         self.file_listbox = tk.Listbox(
             list_row,
             yscrollcommand=scrollbar.set,
-            background='#f5f5f5',
+            background="#F9FAFB",
             selectmode=tk.EXTENDED,
+            activestyle="dotbox",
         )
         self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.file_listbox.yview)
@@ -167,74 +240,71 @@ class ImageOptimizerApp:
         # Tangentbordsradering av markerade rader.
         self.file_listbox.bind("<KeyPress-BackSpace>", self.delete_selected_files)
         self.file_listbox.bind("<KeyPress-Delete>", self.delete_selected_files)
+        self.file_listbox.bind("<Enter>", lambda e: self.file_listbox.config(background="#E8F4FF"))
+        self.file_listbox.bind("<Leave>", lambda e: self.file_listbox.config(background="#F9FAFB"))
 
-        # Drag and drop på hela zonen + listan (tkinterdnd2)
+        # Drag and drop (registeras efter att widgets finns)
         try:
             self.setup_drag_drop()
         except Exception as e:
             print(f"Drag-and-drop init misslyckades: {e}")
-            messagebox.showwarning(
-                "Drag-and-drop",
-                f"Kunne inte initiera drag-and-drop-funktion:\n{e}"
-            )
+            messagebox.showwarning("Drag-and-drop", f"Kunne inte initiera drag-and-drop:\n{e}")
 
-        self.file_listbox.bind('<Enter>', lambda e: self.file_listbox.config(background="#e8f4f8"))
-        self.file_listbox.bind('<Leave>', lambda e: self.file_listbox.config(background="#f5f5f5"))
+        # --- Right card: Inställningar ---
+        right_card_inner = ttk.Frame(right_card, padding="16")
+        right_card_inner.pack(fill=tk.BOTH, expand=True)
 
-        # HÖGER KOLUMN: Inställningar
-        right_column = ttk.LabelFrame(main_container, text="Inställningar", padding="10")
-        right_column.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(5, 0))
+        settings_title = ttk.Label(right_card_inner, text="Inställningar", font=("Helvetica", 14, "bold"))
+        settings_title.pack(anchor=tk.W)
 
-        # API-nyckel
-        api_label = ttk.Label(right_column, text="TinyPNG API-nyckel")
-        api_label.pack(anchor=tk.W, pady=(0, 5))
+        sep1 = ttk.Separator(right_card_inner)
+        sep1.pack(fill=tk.X, pady=12)
+
+        api_label = ttk.Label(right_card_inner, text="TinyPNG API-nyckel")
+        api_label.pack(anchor=tk.W, pady=(0, 6))
 
         self.api_key_var = tk.StringVar(value=self.api_key or "")
-        api_entry = ttk.Entry(right_column, textvariable=self.api_key_var, show="*", width=30)
-        api_entry.pack(fill=tk.X, pady=(0, 2))
+        api_entry = ttk.Entry(right_card_inner, textvariable=self.api_key_var, show="*", width=30)
+        api_entry.pack(fill=tk.X)
 
-        save_key_btn = ttk.Button(right_column, text="Spara nyckel", command=self.on_save_api_key)
-        save_key_btn.pack(fill=tk.X, pady=(0, 15))
+        save_key_btn = ttk.Button(right_card_inner, text="Spara nyckel", command=self.on_save_api_key)
+        save_key_btn.pack(fill=tk.X, pady=(10, 18))
 
-        # Max bredd
-        width_label = ttk.Label(right_column, text="Max bildstorlek (px):")
-        width_label.pack(anchor=tk.W, pady=(0, 5))
+        width_label = ttk.Label(right_card_inner, text="Max bildstorlek (px):")
+        width_label.pack(anchor=tk.W, pady=(0, 6))
 
         self.max_width_var = tk.IntVar(value=1920)
-        width_entry = ttk.Entry(right_column, textvariable=self.max_width_var, width=10)
-        width_entry.pack(fill=tk.X, pady=(0, 15))
+        width_entry = ttk.Entry(right_card_inner, textvariable=self.max_width_var, width=10)
+        width_entry.pack(anchor=tk.W, pady=(0, 18))
 
-        # Output-mapp
-        output_label = ttk.Label(right_column, text="Spara optimerade bilder i")
-        output_label.pack(anchor=tk.W, pady=(0, 5))
+        output_label = ttk.Label(right_card_inner, text="Spara optimerade bilder i")
+        output_label.pack(anchor=tk.W, pady=(0, 6))
 
         self.output_label = ttk.Label(
-            right_column,
+            right_card_inner,
             text="Ingen mapp vald\n(sparas bredvid originalfiler)",
             foreground="gray",
-            font=('Helvetica', 9)
+            font=("Helvetica", 9),
         )
-        self.output_label.pack(fill=tk.X, pady=(0, 5))
+        self.output_label.pack(fill=tk.X, pady=(0, 10))
 
-        select_output_btn = ttk.Button(right_column, text="Välj mapp", command=self.select_output_dir)
-        select_output_btn.pack(fill=tk.X, pady=(0, 20))
+        select_output_btn = ttk.Button(right_card_inner, text="Välj mapp", command=self.select_output_dir)
+        select_output_btn.pack(fill=tk.X, pady=(0, 18))
 
-        # Stor knapp längst ner med Canvas för att få färg på macOS
-        button_frame = tk.Frame(right_column)
-        button_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Primärknapp längst ner (spänner över hela appen)
+        bottom = ttk.Frame(outer)
+        bottom.pack(fill=tk.X, pady=(16, 0))
 
-        self.button_canvas = tk.Canvas(button_frame, height=80, highlightthickness=0)
-        self.button_canvas.pack(fill=tk.BOTH, expand=True)
+        self.button_canvas = tk.Canvas(bottom, height=74, highlightthickness=0)
+        self.button_canvas.pack(fill=tk.X)
 
         self.button_bg = self.button_canvas.create_rectangle(
             0, 0, 1000, 100, fill="#4CAF50", outline="#4CAF50", width=0
         )
-
         self.button_text_id = self.button_canvas.create_text(
-            500, 40, text="Optimera bilder!",
-            font=("Arial", 18, "bold"), fill="white"
+            500, 37, text="Optimera bilder!",
+            font=("Arial", 20, "bold"), fill="white"
         )
-
         self.button_canvas.bind("<Button-1>", lambda e: self.start_processing())
         self.button_canvas.bind("<Enter>", lambda e: self.button_canvas.config(cursor="pointinghand"))
         self.button_canvas.bind("<Leave>", lambda e: self.button_canvas.config(cursor=""))
@@ -254,7 +324,7 @@ class ImageOptimizerApp:
         try:
             from tkinterdnd2 import DND_FILES
 
-            for w in (self.drop_zone, self.drop_hint, self.file_listbox):
+            for w in (self.drop_frame, self.drop_canvas, self.file_listbox):
                 w.drop_target_register(DND_FILES)
                 w.dnd_bind('<<Drop>>', self.on_drop)
             print("Drag-and-drop aktiverat med tkinterdnd2 (drop-zon + lista)")
@@ -325,6 +395,24 @@ class ImageOptimizerApp:
         self.file_listbox.delete(0, tk.END)
         for file_path in self.files_to_process:
             self.file_listbox.insert(tk.END, Path(file_path).name)
+
+        if self.files_to_process:
+            # Visa listan när det finns filer.
+            if not self.list_container.winfo_ismapped():
+                self.list_container.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+            # Döljer placeholder-texten i dropytan när listan inte är tom.
+            try:
+                self.drop_canvas.itemconfigure("drop_text", state="hidden")
+            except Exception:
+                pass
+        else:
+            # Döljer listan i tomt läge (design: endast dashed drag-yta).
+            if self.list_container.winfo_ismapped():
+                self.list_container.pack_forget()
+            try:
+                self.drop_canvas.itemconfigure("drop_text", state="normal")
+            except Exception:
+                pass
 
     def select_output_dir(self):
         """Välj output-mapp"""

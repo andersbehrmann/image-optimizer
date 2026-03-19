@@ -8,9 +8,14 @@ from PyInstaller.utils.hooks import collect_data_files
 datas = [('config.json', '.')]
 datas += collect_data_files('certifi')
 datas += collect_data_files('tkinterdnd2')
+datas += [('illustration.png', '.')]
 
 # Versioning: `VERSION` is single source of truth (MAJOR.MINOR.PATCH).
-_version_path = Path(__file__).with_name("VERSION")
+#
+# PyInstaller exekverar spec-filer via `exec(...)` och i vissa körningar
+# (t.ex. beroende på hur PyInstaller anropar spec) är `__file__` inte definierat.
+# Därför läser vi `VERSION` relativt nuvarande working directory.
+_version_path = Path.cwd() / "VERSION"
 _VERSION = _version_path.read_text(encoding="utf-8").strip()
 if not re.match(r"^\d+\.\d+\.\d+$", _VERSION):
     raise ValueError(
