@@ -10,8 +10,6 @@ import sys
 # Fixa macOS Tkinter-meny problem INNAN tkinter importeras
 if sys.platform == 'darwin':
     os.environ['TK_SILENCE_DEPRECATION'] = '1'
-    # Disable Tk console window on macOS
-    os.environ['TK_CONSOLE'] = '0'
 
 # Fixa SSL-certifikat för PyInstaller bundle
 if getattr(sys, 'frozen', False):

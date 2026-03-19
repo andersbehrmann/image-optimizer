@@ -53,7 +53,6 @@ def _setup_macos_embedded_tcl_tk():
 # Miljö innan något Tk-relaterat laddas
 if sys.platform == 'darwin':
     os.environ.setdefault('TK_SILENCE_DEPRECATION', '1')
-    os.environ.setdefault('TK_CONSOLE', '0')
     _setup_macos_embedded_tcl_tk()
 
 import main  # noqa: E402
