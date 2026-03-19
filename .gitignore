@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Build/artifacts
+dist/
+build/
+
+# Logs / debugging
+app_run.log
+ps_list.txt
+ps_now.txt
+
+# Secrets (contains TinyPNG API key)
+config.json
+
+# PyInstaller artifacts (if generated)
+# (Undantag: själva spec-filen i projektet ska committas)
+*.spec
+!Image Optimizer.spec
+*.toc
+*.pyz
+*.pkg
+*.manifest
+
