@@ -19,6 +19,13 @@
 ### Fixed
 ### Changed
 
+## 2.0.1 - 2026-03-19
+
+### Added
+### Fixed
+- refine UI alignment and macOS startup stability
+### Changed
+
 ## Unreleased
 
 ### Added
