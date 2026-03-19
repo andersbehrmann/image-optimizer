@@ -12,6 +12,13 @@
 ### Changed
 - add semver VERSION + bump_version tooling
 
+## 2.0.0 - 2026-03-19
+
+### Added
+- UI v2 redesign + new icon/illustration
+### Fixed
+### Changed
+
 ## Unreleased
 
 ### Added
